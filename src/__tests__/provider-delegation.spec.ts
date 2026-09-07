@@ -243,16 +243,18 @@ describe("ClineProvider.delegateParentAndOpenChild()", () => {
 			}),
 		})
 		const deleteTaskWithId = vi.fn().mockResolvedValue(undefined)
+		const getTaskWithId = vi.fn().mockResolvedValue({ historyItem: parentHistoryItem })
 		const createTaskWithHistoryItem = vi.fn().mockResolvedValue(undefined)
+		const removeClineFromStack = vi.fn().mockResolvedValue(undefined)
 		const provider = {
 			taskScheduler: new TaskScheduler(),
 			emit: vi.fn(),
 			getCurrentTask,
-			removeClineFromStack: vi.fn().mockResolvedValue(undefined),
+			removeClineFromStack,
 			createTask,
 			handleModeSwitch: vi.fn().mockResolvedValue(undefined),
 			deleteTaskWithId,
-			getTaskWithId: vi.fn().mockResolvedValue({ historyItem: parentHistoryItem }),
+			getTaskWithId,
 			createTaskWithHistoryItem,
 			log: vi.fn(),
 			isViewLaunched: false,
@@ -270,7 +272,9 @@ describe("ClineProvider.delegateParentAndOpenChild()", () => {
 		).rejects.toThrow("Pending action mismatch for parent parent-1")
 
 		expect(child.run).not.toHaveBeenCalled()
+		expect(removeClineFromStack).toHaveBeenCalledTimes(2)
 		expect(deleteTaskWithId).toHaveBeenCalledWith("child-1", false)
+		expect(getTaskWithId).toHaveBeenCalledWith("parent-1")
 		expect(createTaskWithHistoryItem).toHaveBeenCalledWith(parentHistoryItem)
 	})
 
@@ -286,6 +290,10 @@ describe("ClineProvider.delegateParentAndOpenChild()", () => {
 		const parentTask = makeParentTask()
 		const child = { taskId: "child-1", run: vi.fn().mockResolvedValue(undefined) }
 		const getCurrentTask = vi.fn(() => parentTask)
+		const removeClineFromStack = vi.fn().mockResolvedValue(undefined)
+		const deleteTaskWithId = vi.fn().mockResolvedValue(undefined)
+		const getTaskWithId = vi.fn().mockResolvedValue({ historyItem: parentHistoryItem })
+		const createTaskWithHistoryItem = vi.fn().mockResolvedValue(undefined)
 		const taskHistoryStore = makeStoreStub({
 			get: vi.fn().mockReturnValue({ ...parentHistoryItem, status: "active", pendingAction }),
 			atomicReadAndUpdate: vi.fn(async (_taskId: string, updater: (item: HistoryItem) => HistoryItem) => {
@@ -297,12 +305,12 @@ describe("ClineProvider.delegateParentAndOpenChild()", () => {
 			taskScheduler: new TaskScheduler(),
 			emit: vi.fn(),
 			getCurrentTask,
-			removeClineFromStack: vi.fn().mockResolvedValue(undefined),
+			removeClineFromStack,
 			createTask: vi.fn().mockResolvedValue(child),
 			handleModeSwitch: vi.fn().mockResolvedValue(undefined),
-			deleteTaskWithId: vi.fn().mockResolvedValue(undefined),
-			getTaskWithId: vi.fn().mockResolvedValue({ historyItem: parentHistoryItem }),
-			createTaskWithHistoryItem: vi.fn().mockResolvedValue(undefined),
+			deleteTaskWithId,
+			getTaskWithId,
+			createTaskWithHistoryItem,
 			log: vi.fn(),
 			isViewLaunched: false,
 			taskHistoryStore,
@@ -319,6 +327,12 @@ describe("ClineProvider.delegateParentAndOpenChild()", () => {
 		).rejects.toThrow(
 			"[delegateParentAndOpenChild] Pending action mismatch for parent parent-1: expected create-action, found undefined",
 		)
+
+		expect(child.run).not.toHaveBeenCalled()
+		expect(removeClineFromStack).toHaveBeenCalledTimes(1)
+		expect(deleteTaskWithId).toHaveBeenCalledWith("child-1", false)
+		expect(getTaskWithId).toHaveBeenCalledWith("parent-1")
+		expect(createTaskWithHistoryItem).toHaveBeenCalledWith(parentHistoryItem)
 	})
 
 	it("persists parent delegation metadata via atomicReadAndUpdate and emits TaskDelegated", async () => {
