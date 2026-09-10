@@ -43,7 +43,7 @@ const makeParentTask = () =>
 		retrySaveApiConversationHistory: vi.fn(),
 	}) as any
 
-describe("ClineProvider.delegateParentAndOpenChild()", () => {
+describe("ClineProvider.removeClineFromStack()", () => {
 	it("forwards saveMessages false only when explicitly removing without persistence", async () => {
 		const task = {
 			taskId: "child-1",
@@ -88,7 +88,9 @@ describe("ClineProvider.delegateParentAndOpenChild()", () => {
 		expect(task.abortTask).toHaveBeenCalledTimes(1)
 		expect(task.abortTask).toHaveBeenCalledWith(true)
 	})
+})
 
+describe("ClineProvider.delegateParentAndOpenChild()", () => {
 	it("rejects a stale restored action before delegation side effects", async () => {
 		const parentTask = makeParentTask()
 		const removeClineFromStack = vi.fn()
